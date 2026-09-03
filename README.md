@@ -67,6 +67,8 @@ source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
+For a fully reproducible install (the exact versions this project was last tested against, rather than the widest compatible range), use `pip install -r requirements-lock.txt` instead. See the comment at the top of that file for how it's generated/regenerated.
+
 The first run downloads a MediaPipe pose model bundle (a few MB) to `~/.cache/strength_form_analyzer/models/` -- this is machine-local and never part of the repo.
 
 ## Usage

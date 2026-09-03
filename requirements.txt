@@ -1,4 +1,7 @@
-# Core runtime dependencies. See pyproject.toml for the packaged version.
+# Core runtime dependencies (version ranges). See pyproject.toml for the
+# packaged version, and requirements-lock.txt for the exact versions this
+# project was last verified against -- prefer that file for a fully
+# reproducible install (`pip install -r requirements-lock.txt`).
 # mediapipe pinned <1.0: see pyproject.toml for why (1.0.1 crashes on some
 # macOS setups with the PoseLandmarker graph).
 mediapipe>=0.10.18,<0.11
