@@ -39,26 +39,34 @@ ModelComplexity = Literal["lite", "full", "heavy"]
 
 DEFAULT_MODEL_CACHE_DIR = Path.home() / ".cache" / "strength_form_analyzer" / "models"
 
-# Maps our backend-agnostic Landmark enum to MediaPipe's PoseLandmark names.
-# Only the subset of MediaPipe's 33 landmarks this project needs is included.
-_LANDMARK_TO_MEDIAPIPE_NAME: dict[Landmark, str] = {
-    Landmark.NOSE: "NOSE",
-    Landmark.LEFT_SHOULDER: "LEFT_SHOULDER",
-    Landmark.RIGHT_SHOULDER: "RIGHT_SHOULDER",
-    Landmark.LEFT_ELBOW: "LEFT_ELBOW",
-    Landmark.RIGHT_ELBOW: "RIGHT_ELBOW",
-    Landmark.LEFT_WRIST: "LEFT_WRIST",
-    Landmark.RIGHT_WRIST: "RIGHT_WRIST",
-    Landmark.LEFT_HIP: "LEFT_HIP",
-    Landmark.RIGHT_HIP: "RIGHT_HIP",
-    Landmark.LEFT_KNEE: "LEFT_KNEE",
-    Landmark.RIGHT_KNEE: "RIGHT_KNEE",
-    Landmark.LEFT_ANKLE: "LEFT_ANKLE",
-    Landmark.RIGHT_ANKLE: "RIGHT_ANKLE",
-    Landmark.LEFT_HEEL: "LEFT_HEEL",
-    Landmark.RIGHT_HEEL: "RIGHT_HEEL",
-    Landmark.LEFT_FOOT_INDEX: "LEFT_FOOT_INDEX",
-    Landmark.RIGHT_FOOT_INDEX: "RIGHT_FOOT_INDEX",
+# Maps our backend-agnostic Landmark enum to MediaPipe's fixed BlazePose
+# landmark index (0-32). Hardcoded rather than looked up from the library at
+# runtime: this topology is a stable, publicly documented part of the model
+# spec (https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker#pose_landmarker_model)
+# and hasn't changed across mediapipe releases, but *where* it's exposed in
+# the Python API has -- `mp.solutions.pose.PoseLandmark` exists on some
+# 0.10.x releases but not others (removed as of 0.10.35), while
+# `mediapipe.tasks.python.vision.PoseLandmark` is the reverse (present on
+# 0.10.35 and 1.0.1, absent on 0.10.21). Neither is reliable across the
+# version range this project supports, so the index is inlined here instead.
+_LANDMARK_TO_MEDIAPIPE_INDEX: dict[Landmark, int] = {
+    Landmark.NOSE: 0,
+    Landmark.LEFT_SHOULDER: 11,
+    Landmark.RIGHT_SHOULDER: 12,
+    Landmark.LEFT_ELBOW: 13,
+    Landmark.RIGHT_ELBOW: 14,
+    Landmark.LEFT_WRIST: 15,
+    Landmark.RIGHT_WRIST: 16,
+    Landmark.LEFT_HIP: 23,
+    Landmark.RIGHT_HIP: 24,
+    Landmark.LEFT_KNEE: 25,
+    Landmark.RIGHT_KNEE: 26,
+    Landmark.LEFT_ANKLE: 27,
+    Landmark.RIGHT_ANKLE: 28,
+    Landmark.LEFT_HEEL: 29,
+    Landmark.RIGHT_HEEL: 30,
+    Landmark.LEFT_FOOT_INDEX: 31,
+    Landmark.RIGHT_FOOT_INDEX: 32,
 }
 
 
@@ -119,21 +127,12 @@ class MediaPipePoseEstimator(PoseEstimator):
         """
         # Imported lazily so that importing this module doesn't require
         # mediapipe unless a MediaPipePoseEstimator is actually constructed.
-        import mediapipe as mp
         from mediapipe.tasks.python import BaseOptions
         from mediapipe.tasks.python.vision import (
             PoseLandmarker,
             PoseLandmarkerOptions,
             RunningMode,
         )
-
-        # The Tasks API result is a flat, index-ordered list of landmarks
-        # rather than a named structure. The index order matches the legacy
-        # `mp.solutions.pose.PoseLandmark` enum (BlazePose's fixed 33-point
-        # topology), which is still shipped for this purpose.
-        self._landmark_index: dict[str, int] = {
-            name: member.value for name, member in mp.solutions.pose.PoseLandmark.__members__.items()
-        }
 
         cache_dir = model_cache_dir or DEFAULT_MODEL_CACHE_DIR
         resolved_model_path = model_path or _ensure_model_downloaded(model_complexity, cache_dir)
@@ -188,8 +187,7 @@ class MediaPipePoseEstimator(PoseEstimator):
 
         raw_landmarks = result.pose_landmarks[0]
         landmarks: dict[Landmark, LandmarkPoint] = {}
-        for landmark, mp_name in _LANDMARK_TO_MEDIAPIPE_NAME.items():
-            index = self._landmark_index[mp_name]
+        for landmark, index in _LANDMARK_TO_MEDIAPIPE_INDEX.items():
             raw = raw_landmarks[index]
             visibility = raw.visibility if raw.visibility is not None else 1.0
             landmarks[landmark] = LandmarkPoint(
