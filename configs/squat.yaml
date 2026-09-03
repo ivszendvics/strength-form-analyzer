@@ -1,0 +1,55 @@
+# Squat thresholds and weights.
+#
+# These are starting-point heuristics chosen to be geometrically reasonable
+# (e.g. ~90-100 degree knee flexion is commonly cited as "parallel" squat
+# depth), NOT values calibrated against labeled real-world data. Before
+# relying on this for anything beyond a portfolio/demo project, calibrate
+# these against your own labeled reps -- see README "Data and Calibration".
+
+rep_detection:
+  # Angles in degrees, measured at the knee. Larger = straighter leg.
+  standing_angle: 165
+  descending_threshold: 155 # must drop below this to start a rep (hysteresis vs standing_angle)
+  bottom_angle: 110 # must reach at or below this to count as a genuine bottom
+  ascending_threshold: 120 # must rise back above this to be considered ascending
+  standing_return_threshold: 155 # must return to at least this to complete the rep
+  min_rep_duration_seconds: 0.5
+  min_frames_in_state: 2
+
+form:
+  depth:
+    # "Parallel" squat depth heuristic; real appropriate depth varies by
+    # anatomy (hip structure, ankle mobility) and training goal.
+    target_angle: 100
+    tolerance: 10
+
+  trunk:
+    # Forward trunk lean beyond this (degrees from vertical) is flagged.
+    # High-bar/front-rack squats tolerate less forward lean than low-bar.
+    max_angle: 45
+
+  tempo:
+    max_deviation_ratio: 0.4 # rep duration vs set average, as a fraction
+
+  consistency:
+    min_rom_ratio_vs_earlier: 0.8 # ROM must stay >= 80% of earlier reps' average
+
+  symmetry:
+    max_asymmetry_percent: 15
+
+  knee_tracking:
+    # Horizontal knee-vs-ankle drift is only a meaningful valgus/varus proxy
+    # from a front-facing camera; set to "front" if filming from the front.
+    camera_view: side
+    max_drift_ratio: 0.25
+
+scoring:
+  # Weights need not sum to 1 -- they are normalized when combined. A rule
+  # whose component name isn't listed here contributes 0 weight (ignored).
+  depth: 0.30
+  trunk: 0.20
+  tempo: 0.15
+  stability: 0.20
+  symmetry: 0.10
+  knee_tracking: 0.05
+  good_threshold: 80

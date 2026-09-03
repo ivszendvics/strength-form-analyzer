@@ -1,0 +1,49 @@
+# Deadlift thresholds and weights.
+#
+# Rep detection here is driven by hip angle rather than knee angle (see
+# src/exercises/deadlift.py docstring). These are starting-point heuristics,
+# not values calibrated against labeled data -- see README "Data and
+# Calibration" before relying on this beyond a portfolio/demo project.
+
+rep_detection:
+  standing_angle: 170
+  descending_threshold: 155
+  bottom_angle: 90
+  ascending_threshold: 110
+  standing_return_threshold: 160
+  min_rep_duration_seconds: 0.5
+  min_frames_in_state: 2
+
+form:
+  lockout:
+    # Hip angle expected at a full, locked-out top position.
+    target_angle: 170
+    tolerance: 10
+
+  trunk:
+    # Deadlifts inherently involve more forward trunk flexion than a squat,
+    # so this default is higher than the squat config's.
+    max_angle: 55
+
+  tempo:
+    max_deviation_ratio: 0.4
+
+  consistency:
+    min_rom_ratio_vs_earlier: 0.8
+
+  symmetry:
+    max_asymmetry_percent: 15
+
+  starting_position:
+    # How much the starting hip angle (at the bar) may drift rep-to-rep
+    # before being flagged as an inconsistent setup position.
+    max_deviation_degrees: 12
+
+scoring:
+  lockout: 0.25
+  trunk: 0.25
+  tempo: 0.15
+  stability: 0.15
+  symmetry: 0.10
+  starting_position: 0.10
+  good_threshold: 80
