@@ -1,0 +1,51 @@
+# Bench press thresholds and weights.
+#
+# Rep detection is driven by elbow angle (shoulder-elbow-wrist): a bench
+# press starts and ends extended at lockout with a single dip in between,
+# so it reuses the same rep-detection state machine as squat/lunge rather
+# than deadlift's reversed pattern. These are starting-point heuristics,
+# not values calibrated against labeled data -- see README "Data and
+# Calibration" before relying on this beyond a portfolio/demo project.
+# Depth in particular varies a lot by grip width and arm length.
+
+rep_detection:
+  standing_angle: 165
+  descending_threshold: 155
+  bottom_angle: 95
+  ascending_threshold: 115
+  standing_return_threshold: 155
+  min_rep_duration_seconds: 0.5
+  min_frames_in_state: 2
+
+form:
+  depth:
+    # Elbow angle when the bar reaches the chest. ~80-90 degrees is a
+    # common heuristic for a full-range rep, but a wider grip reaches a
+    # shallower elbow bend at the same bar-to-chest depth.
+    target_angle: 85
+    tolerance: 10
+
+  elbow_position:
+    # Hip-shoulder-elbow angle: how far the upper arm sits from the torso
+    # line. Larger = more flared (upper arm closer to perpendicular from
+    # the torso), commonly coached as a shoulder-strain risk factor. This
+    # threshold has not been validated against real footage -- calibrate
+    # it against your own labeled reps before trusting it.
+    max_angle: 75
+
+  tempo:
+    max_deviation_ratio: 0.4
+
+  consistency:
+    min_rom_ratio_vs_earlier: 0.8
+
+  symmetry:
+    max_asymmetry_percent: 15
+
+scoring:
+  depth: 0.35
+  elbow_position: 0.25
+  tempo: 0.15
+  stability: 0.15
+  symmetry: 0.10
+  good_threshold: 80

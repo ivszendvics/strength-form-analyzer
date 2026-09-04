@@ -99,6 +99,45 @@ def evaluate_depth(
     return RuleResult(component="depth", score=score, issues=[issue])
 
 
+def evaluate_max_angle(
+    context: RuleContext,
+    angle_key: str,
+    max_threshold: float,
+    component: str,
+    issue_type: str,
+    description: str,
+    points_per_degree_over: float = 2.5,
+) -> RuleResult:
+    """Generic: score how far a rep's *maximum* angle exceeds a configured
+    ceiling. Shared building block for any "don't let this angle get too
+    large" heuristic -- e.g. trunk lean for squat/deadlift/lunge, or elbow
+    flare for bench press. Flagged as a *potential* issue, not a proven
+    fault -- filming angle and individual anthropometry both affect the
+    measured angle.
+    """
+    max_value = context.metrics.max_angle_degrees.get(angle_key)
+    if max_value is None:
+        return RuleResult(component=component, score=50.0, issues=[])
+
+    if max_value <= max_threshold:
+        return RuleResult(component=component, score=100.0, issues=[])
+
+    degrees_over = max_value - max_threshold
+    score = _clamp_score(100.0 - degrees_over * points_per_degree_over)
+    severity = "high" if degrees_over > 20 else "medium" if degrees_over > 10 else "low"
+    confidence = min(0.9, 0.5 + degrees_over / 50.0)
+    issue = FormIssue(
+        type=issue_type,
+        severity=severity,
+        confidence=confidence,
+        message=(
+            f"Potential issue: {description} of {max_value:.0f} degrees "
+            f"exceeds the configured comfort threshold of {max_threshold:.0f} degrees."
+        ),
+    )
+    return RuleResult(component=component, score=score, issues=[issue])
+
+
 def evaluate_trunk_lean(
     context: RuleContext,
     max_trunk_angle_threshold: float,
@@ -110,27 +149,40 @@ def evaluate_trunk_lean(
     issue, not a proven fault -- filming angle and individual anthropometry
     both affect the measured trunk angle.
     """
-    max_trunk = context.metrics.max_angle_degrees.get("trunk_angle")
-    if max_trunk is None:
-        return RuleResult(component="trunk", score=50.0, issues=[])
-
-    if max_trunk <= max_trunk_angle_threshold:
-        return RuleResult(component="trunk", score=100.0, issues=[])
-
-    degrees_over = max_trunk - max_trunk_angle_threshold
-    score = _clamp_score(100.0 - degrees_over * points_per_degree_over)
-    severity = "high" if degrees_over > 20 else "medium" if degrees_over > 10 else "low"
-    confidence = min(0.9, 0.5 + degrees_over / 50.0)
-    issue = FormIssue(
-        type="EXCESSIVE_TRUNK_LEAN",
-        severity=severity,
-        confidence=confidence,
-        message=(
-            f"Potential issue: peak trunk inclination of {max_trunk:.0f} degrees from vertical "
-            f"exceeds the configured comfort threshold of {max_trunk_angle_threshold:.0f} degrees."
-        ),
+    return evaluate_max_angle(
+        context,
+        angle_key="trunk_angle",
+        max_threshold=max_trunk_angle_threshold,
+        component="trunk",
+        issue_type="EXCESSIVE_TRUNK_LEAN",
+        description="peak trunk inclination",
+        points_per_degree_over=points_per_degree_over,
     )
-    return RuleResult(component="trunk", score=score, issues=[issue])
+
+
+def evaluate_elbow_flare(
+    context: RuleContext,
+    max_shoulder_angle_threshold: float,
+    points_per_degree_over: float = 2.5,
+) -> RuleResult:
+    """Score bench-press elbow flare against a configured maximum.
+
+    Measured as the hip-shoulder-elbow angle: how far the upper arm sits
+    away from the torso line, visible in profile from a side camera (unlike
+    squat's knee-tracking check, this doesn't need a front-on view). Larger
+    = more flared (upper arm closer to perpendicular from the torso),
+    commonly coached as a shoulder-strain risk factor -- flagged as a
+    *potential* issue, not a proven fault.
+    """
+    return evaluate_max_angle(
+        context,
+        angle_key="shoulder_angle",
+        max_threshold=max_shoulder_angle_threshold,
+        component="elbow_position",
+        issue_type="EXCESSIVE_ELBOW_FLARE",
+        description="peak elbow flare (shoulder-elbow angle from the torso)",
+        points_per_degree_over=points_per_degree_over,
+    )
 
 
 def evaluate_tempo(

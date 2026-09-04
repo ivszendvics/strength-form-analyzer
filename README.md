@@ -2,7 +2,7 @@
 
 A computer-vision system for analyzing strength-training movements using pose estimation, biomechanical joint angles, temporal analysis, and rule-based form evaluation.
 
-Give it a video of a squat, deadlift, or lunge and it will detect the person's pose frame-by-frame, compute joint angles, automatically segment the video into repetitions, score each rep against a set of explainable, configurable heuristics, and produce an annotated video, summary plots, and machine-readable JSON/CSV results.
+Give it a video of a squat, deadlift, lunge, or bench press and it will detect the person's pose frame-by-frame, compute joint angles, automatically segment the video into repetitions, score each rep against a set of explainable, configurable heuristics, and produce an annotated video, summary plots, and machine-readable JSON/CSV results.
 
 > **This is a form-analysis heuristics tool, not a medical or coaching product.** See [Limitations](#limitations) before drawing any conclusions from its output.
 
@@ -30,6 +30,7 @@ _A demo GIF/video showing the annotated output goes here once one is recorded. R
 | Squat | hip, knee, ankle, shoulder | knee, hip, trunk | knee angle |
 | Deadlift | shoulder, hip, knee, ankle | hip, knee, trunk | hip angle |
 | Lunge | hip, knee, ankle | front knee, rear knee, hip, trunk | front knee angle |
+| Bench Press | shoulder, elbow, wrist, hip | elbow, shoulder (elbow flare) | elbow angle |
 
 Adding a new exercise means implementing the `Exercise` interface (`src/exercises/base.py`) and adding a `configs/<name>.yaml` -- no changes to pose estimation, rep detection, scoring, visualization, or the CLI are needed. See `src/exercises/squat.py` for a complete example.
 
@@ -41,7 +42,7 @@ strength-form-analyzer/
 │   ├── main.py              # CLI entry point
 │   ├── pose/                # Pose estimation backend abstraction + MediaPipe implementation
 │   ├── biomechanics/        # Angle geometry, smoothing, per-rep metric extraction
-│   ├── exercises/           # Exercise plug-ins: squat, deadlift, lunge
+│   ├── exercises/           # Exercise plug-ins: squat, deadlift, lunge, bench press
 │   ├── reps/                # Rep-detection state machine
 │   ├── analysis/            # Form rules, weighted scoring, orchestration
 │   ├── visualization/       # Video overlay + summary plots
@@ -218,6 +219,7 @@ If pose confidence during a rep was too low (occlusion, motion blur, the person 
 
 - **Squat / Deadlift**: side or front-side camera, full body visible, stable camera, adequate lighting, minimal occlusion.
 - **Lunge**: side view of a forward/reverse split stance, both legs visible.
+- **Bench Press**: side view of the bench, the pressing arm (shoulder through wrist) and torso fully visible throughout the full range of motion.
 - A single person in frame. Multiple people are not reliably supported (see Limitations).
 - Angles are computed from whichever side (left/right) has higher landmark visibility per frame, which degrades gracefully for a side-on camera without assuming a fixed camera side -- but this is still a **2D projection** of a 3D movement (see below).
 

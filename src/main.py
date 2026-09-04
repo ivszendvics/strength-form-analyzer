@@ -36,6 +36,7 @@ _DISPLAY_ANGLES: dict[str, list[str]] = {
     "squat": ["knee_angle", "hip_angle", "trunk_angle"],
     "deadlift": ["hip_angle", "knee_angle", "trunk_angle"],
     "lunge": ["front_knee_angle", "rear_knee_angle", "trunk_angle"],
+    "bench_press": ["elbow_angle", "shoulder_angle"],
 }
 
 
